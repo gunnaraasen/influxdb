@@ -63,7 +63,7 @@ type Handler struct {
 
 	QueryExecutor interface {
 		Authorize(u *meta.UserInfo, q *influxql.Query, db string) error
-		ExecuteQuery(q *influxql.Query, db string, chunkSize int) (<-chan *influxql.Result, error)
+		ExecuteQuery(q *influxql.Query, db string, chunkSize int, closing chan struct{}) (<-chan *influxql.Result, error)
 	}
 
 	PointsWriter interface {
@@ -268,9 +268,11 @@ func (h *Handler) serveQuery(w http.ResponseWriter, r *http.Request, user *meta.
 		}
 	}
 
+	// Make sure if the client disconnects we signal the query to abort
+	closing := make(chan struct{})
 	// Execute query.
 	w.Header().Add("content-type", "application/json")
-	results, err := h.QueryExecutor.ExecuteQuery(query, db, chunkSize)
+	results, err := h.QueryExecutor.ExecuteQuery(query, db, chunkSize, closing)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

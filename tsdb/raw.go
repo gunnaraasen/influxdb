@@ -54,13 +54,13 @@ func (e *RawExecutor) close() {
 }
 
 // Execute begins execution of the query and returns a channel to receive rows.
-func (e *RawExecutor) Execute() <-chan *models.Row {
+func (e *RawExecutor) Execute(closing chan struct{}) <-chan *models.Row {
 	out := make(chan *models.Row, 0)
-	go e.execute(out)
+	go e.execute(out, closing)
 	return out
 }
 
-func (e *RawExecutor) execute(out chan *models.Row) {
+func (e *RawExecutor) execute(out chan *models.Row, closing chan struct{}) {
 	// It's important that all resources are released when execution completes.
 	defer e.close()
 
@@ -93,6 +93,7 @@ func (e *RawExecutor) execute(out chan *models.Row) {
 	// Keep looping until all mappers drained.
 	var err error
 	for {
+		timeout := time.After(30 * time.Second)
 		// Get the next chunk from each Mapper.
 		for _, m := range e.mappers {
 			if m.drained {
@@ -263,6 +264,19 @@ func (e *RawExecutor) execute(out chan *models.Row) {
 			// Limit for this tagset was reached, mark it and start draining a new tagset.
 			e.limitTagSet(chunkedOutput.key())
 			continue
+		}
+		// Check to see if our client disconnected, or it has been to long since
+		// we were asked for data...
+		select {
+		case <-closing:
+			out <- &models.Row{Err: fmt.Errorf("execute was closed by caller")}
+			break
+		case <-timeout:
+			// This should never happen, so if it does, it is a problem
+			out <- &models.Row{Err: fmt.Errorf("execute was closed by caller")}
+			break
+		default:
+			// do nothing
 		}
 	}
 
