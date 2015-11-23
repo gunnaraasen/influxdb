@@ -270,6 +270,14 @@ func (h *Handler) serveQuery(w http.ResponseWriter, r *http.Request, user *meta.
 
 	// Make sure if the client disconnects we signal the query to abort
 	closing := make(chan struct{})
+	if notifier, ok := w.(http.CloseNotifier); ok {
+		notify := notifier.CloseNotify()
+		go func() {
+			<-notify
+			close(closing)
+		}()
+	}
+
 	// Execute query.
 	w.Header().Add("content-type", "application/json")
 	results, err := h.QueryExecutor.ExecuteQuery(query, db, chunkSize, closing)
