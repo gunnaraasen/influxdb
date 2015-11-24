@@ -83,9 +83,6 @@ func (c *Compactor) write(path string) error {
 		if err := w.Write(key, values); err != nil {
 			return err
 		}
-		// We're all done with the Values, release them back to pool to reduce
-		// excess garbage.
-		putValue(values)
 
 		if c.MaxFileSize != 0 && w.Size() > c.MaxFileSize {
 			if err := w.WriteIndex(); err != nil {
