@@ -27,7 +27,7 @@ func NewShowTagKeysExecutor(stmt *influxql.ShowTagKeysStatement, mappers []Mappe
 }
 
 // Execute begins execution of the query and returns a channel to receive rows.
-func (e *ShowTagKeysExecutor) Execute(closing chan struct{}) <-chan *models.Row {
+func (e *ShowTagKeysExecutor) Execute(closing <-chan struct{}) <-chan *models.Row {
 	// It's important that all resources are released when execution completes.
 	defer e.close()
 

@@ -54,13 +54,13 @@ func (e *RawExecutor) close() {
 }
 
 // Execute begins execution of the query and returns a channel to receive rows.
-func (e *RawExecutor) Execute(closing chan struct{}) <-chan *models.Row {
+func (e *RawExecutor) Execute(closing <-chan struct{}) <-chan *models.Row {
 	out := make(chan *models.Row, 0)
 	go e.execute(out, closing)
 	return out
 }
 
-func (e *RawExecutor) execute(out chan *models.Row, closing chan struct{}) {
+func (e *RawExecutor) execute(out chan *models.Row, closing <-chan struct{}) {
 	// It's important that all resources are released when execution completes.
 	defer e.close()
 
@@ -273,7 +273,7 @@ func (e *RawExecutor) execute(out chan *models.Row, closing chan struct{}) {
 			break
 		case <-timeout:
 			// This should never happen, so if it does, it is a problem
-			out <- &models.Row{Err: fmt.Errorf("execute was closed by caller")}
+			out <- &models.Row{Err: fmt.Errorf("execute was closed by read timeout")}
 			break
 		default:
 			// do nothing

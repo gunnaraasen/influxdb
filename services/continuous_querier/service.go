@@ -318,6 +318,8 @@ func (s *Service) runContinuousQueryAndWriteResult(cq *ContinuousQuery) error {
 	}
 
 	closing := make(chan struct{})
+	defer close(closing)
+
 	// Execute the SELECT.
 	ch, err := s.QueryExecutor.ExecuteQuery(q, cq.Database, NoChunkingSize, closing)
 	if err != nil {
@@ -331,7 +333,6 @@ func (s *Service) runContinuousQueryAndWriteResult(cq *ContinuousQuery) error {
 	if res.Err != nil {
 		return res.Err
 	}
-	close(closing)
 	return nil
 }
 

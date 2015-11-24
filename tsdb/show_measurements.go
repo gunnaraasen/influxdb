@@ -27,7 +27,7 @@ func NewShowMeasurementsExecutor(stmt *influxql.ShowMeasurementsStatement, mappe
 }
 
 // Execute begins execution of the query and returns a channel to receive rows.
-func (e *ShowMeasurementsExecutor) Execute(closing chan struct{}) <-chan *models.Row {
+func (e *ShowMeasurementsExecutor) Execute(closing <-chan struct{}) <-chan *models.Row {
 	// It's important that all resources are released when execution completes.
 	e.close()
 
